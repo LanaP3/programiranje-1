@@ -1,5 +1,8 @@
 import csv
+import json
 import os
+import requests
+import sys
 
 ###############################################################################
 # Najprej definirajmo nekaj pomožnih orodij za pridobivanje podatkov s spleta.
@@ -8,27 +11,35 @@ import os
 # definirajte URL glavne strani bolhe za oglase z mačkami
 cats_frontpage_url = 'http://www.bolha.com/zivali/male-zivali/macke/'
 # mapa, v katero bomo shranili podatke
-cat_directory = 'TODO'
+cat_directory = 'macke'
 # ime datoteke v katero bomo shranili glavno stran
 frontpage_filename = 'TODO'
 # ime CSV datoteke v katero bomo shranili podatke
-csv_filename = 'TODO'
+csv_filename = 'podatki.csv'
 
 
 def download_url_to_string(url):
-    """Funkcija kot argument sprejme niz in poskusi vrniti vsebino te spletne
-    strani kot niz. V primeru, da med izvajanje pride do napake vrne None.
-    """
+    '''
+    Parametri
+    ----------
+    niz
+
+    Vrne
+    ----------
+    niz:  vsebina te spletne strani kot niz. V primeru, da med izvajanje pride do napake vrne None.
+    '''
     try:
         # del kode, ki morda sproži napako
-        page_content = 'TODO'
-    except 'TODO':
+        page_content = requests.get(url)
+    except requests.exceptions.ConnectionError:
         # koda, ki se izvede pri napaki
         # dovolj je če izpišemo opozorilo in prekinemo izvajanje funkcije
-        raise NotImplementedError()
+        print('stran ne obstaja!')
     # nadaljujemo s kodo če ni prišlo do napake
-    raise NotImplementedError()
+    else:
+        return page_content
 
+    
 
 def save_string_to_file(text, directory, filename):
     """Funkcija zapiše vrednost parametra "text" v novo ustvarjeno datoteko
@@ -48,7 +59,16 @@ def save_string_to_file(text, directory, filename):
 def save_frontpage(page, directory, filename):
     """Funkcija shrani vsebino spletne strani na naslovu "page" v datoteko
     "directory"/"filename"."""
-    raise NotImplementedError()
+    try:
+        print(f'Shranjujem {page} ...', end='')
+        r = requests.get(page)
+    except requests.exceptions.ConnectionError:
+        print('stran ne obstaja!')
+    else:
+        path = os.path.join(directory, filename)
+        with open(path, 'w', encoding='utf-8') as datoteka:
+            datoteka.write(r.text)
+            print('shranjeno!')
 
 
 ###############################################################################
@@ -58,8 +78,9 @@ def save_frontpage(page, directory, filename):
 
 def read_file_to_string(directory, filename):
     """Funkcija vrne celotno vsebino datoteke "directory"/"filename" kot niz."""
-    raise NotImplementedError()
-
+    path = os.path.join(directory, filename)
+    with open(path, 'w', encoding='utf-8') as datoteka:
+        return datoteka.read()
 
 # Definirajte funkcijo, ki sprejme niz, ki predstavlja vsebino spletne strani,
 # in ga razdeli na dele, kjer vsak del predstavlja en oglas. To storite s
