@@ -1,7 +1,3 @@
-(* This is an OCaml editor.
-   Enter your program here and send it to the toplevel using the "Eval code"
-   button or [Ctrl-e]. *)
-
 (* ========== Vaja 2: Funkcijsko Programiranje  ========== *)
 
 (*----------------------------------------------------------------------------*]
@@ -70,11 +66,12 @@ let rec map f = function
  napisati reverse tako, da bo bolj učinkovit in hkrati repno rekurziven.
  Pri tem ne smete uporabiti vgrajene funkcije [List.rev] ali [List.rev_append].
 [*----------------------------------------------------------------------------*)
-
-let rec reverse lst = function
-  | [] -> []
-  | lst :: x -> reverse lst @ [x]
-
+let reverse lst = 
+  let rec reverse_aux acc = function
+    | [] -> acc
+    | x :: xs -> reverse_aux (x :: acc) xs
+  in 
+  reverse_aux [] lst
 (*----------------------------------------------------------------------------*]
  Funkcija [map_tlrec] je repno rekurzivna različica funkcije [map].
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -86,13 +83,12 @@ let rec reverse lst = function
 let map_tlrec f lst =
   let rec map_tlerc_aux acc = function
     | [] -> acc 
-    | x :: xs -> map_tlerc_aux ((f x) :: acc) xs 
+    | x :: xs -> map_tlerc_aux ((f x) :: acc) xs
   in
   map_tlerc_aux [] lst
 
 (*----------------------------------------------------------------------------*]
  Funkcija [mapi] je ekvivalentna python kodi:
-
   def mapi(f, list):
       mapi_list = []
       index = 0
@@ -100,14 +96,17 @@ let map_tlrec f lst =
           mapi_list += [f(x, index)]
           index += 1
       return mapi_list
-
  Pri tem ne smete uporabiti vgrajene funkcije [List.mapi].
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  # mapi (+) [0; 0; 0; 2; 2; 2];;
  - : int list = [0; 1; 2; 5; 6; 7]
 [*----------------------------------------------------------------------------*)
 
-let rec mapi = ()
+let mapi f lst =
+  let rec mapi_aux acc i f = function
+    | [] -> reverse acc
+    | x :: xs -> mapi_aux (f x i :: acc) (i+1) f xs
+  in mapi_aux [] 0 f lst
 
 (*----------------------------------------------------------------------------*]
  Funkcija [zip] sprejme dva seznama in vrne seznam parov istoležnih
@@ -120,7 +119,14 @@ let rec mapi = ()
  Exception: Failure "Different lengths of input lists.".
 [*----------------------------------------------------------------------------*)
 
-let rec zip = ()
+let zip sez_1 sez_2 =
+  let rec zip_aux acc xs ys =
+    match (xs, ys) with
+    | [], [] -> reverse acc
+    | x :: xs, y:: ys -> zip_aux ((x, y) :: acc) xs ys
+    | _ -> failwith "Different lengths of input lists."
+  in zip_aux [] sez_1 sez_2
+    
 
 (*----------------------------------------------------------------------------*]
  Funkcija [unzip] je inverz funkcije [zip], torej sprejme seznam parov
@@ -131,7 +137,12 @@ let rec zip = ()
  - : int list * string list = ([0; 1; 2], ["a"; "b"; "c"])
 [*----------------------------------------------------------------------------*)
 
-let rec unzip = ()
+let rec unzip = function 
+  | [] -> [], []
+  | (x,y) :: tl ->
+      let xs, ys = unzip tl
+      in
+      (x :: xs, y :: ys)
 
 (*----------------------------------------------------------------------------*]
  Funkcija [unzip_tlrec] je repno rekurzivna različica funkcije [unzip].
@@ -144,12 +155,10 @@ let rec unzip_tlrec = ()
 
 (*----------------------------------------------------------------------------*]
  Funkcija [loop condition f x] naj se izvede kot python koda:
-
   def loop(condition, f, x):
       while condition(x):
           x = f(x)
       return x
-
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  # loop (fun x -> x < 10) ((+) 4) 4;;
  - : int = 12
