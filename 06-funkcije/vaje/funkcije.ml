@@ -1,10 +1,18 @@
+(* This is an OCaml editor.
+   Enter your program here and send it to the toplevel using the "Eval code"
+   button or [Ctrl-e]. *)
+
 (* ========== Vaja 2: Funkcijsko Programiranje  ========== *)
 
 (*----------------------------------------------------------------------------*]
  Definirajte pomožno funkcijo za obračanje seznamov.
 [*----------------------------------------------------------------------------*)
-
-let rec reverse = ()
+let reverse_basic lst =
+  let rec reverse_basic_aux acc = function
+    | [] -> acc
+    | x :: xs -> reverse_basic_aux (x :: acc) xs
+  in
+  reverse_basic_aux lst
 
 (*----------------------------------------------------------------------------*]
  Funkcija [repeat x n] vrne seznam [n] ponovitev vrednosti [x]. Za neprimerne
@@ -16,7 +24,14 @@ let rec reverse = ()
  - : string list = []
 [*----------------------------------------------------------------------------*)
 
-let rec repeat = ()
+let repeat x n =
+  let rec repeat_aux acc m =
+    if m <= 0 then
+      acc 
+    else  
+      repeat_aux (x :: acc) (m-1) 
+  in
+  repeat_aux [] n
 
 (*----------------------------------------------------------------------------*]
  Funkcija [range] sprejme število in vrne seznam vseh celih števil od 0 do
@@ -27,8 +42,14 @@ Pri tem ne smete uporabbiti vgrajene funkcije [List.init].
  # range 10;;
  - : int list = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10]
 [*----------------------------------------------------------------------------*)
-
-let rec range = ()
+let range n =
+  let rec range_aux acc m = 
+    if m >= 0 then 
+      range_aux (m :: acc) (m-1)
+    else
+      acc
+  in
+  range_aux [] n
 
 (*----------------------------------------------------------------------------*]
  Funkcija [map f list] sprejme seznam [list] oblike [x0; x1; x2; ...] in
@@ -40,8 +61,9 @@ let rec range = ()
    map plus_two [0; 1; 2; 3; 4];;
  - : int list = [2; 3; 4; 5; 6]
 [*----------------------------------------------------------------------------*)
-
-let rec map = ()
+let rec map f = function
+  | [] -> []
+  | x :: xs -> f x :: map f xs        
 
 (*----------------------------------------------------------------------------*]
  Časovna zahtevnost operatorja [@] je linearna v prvem argumentu, poskušajte 
@@ -49,7 +71,9 @@ let rec map = ()
  Pri tem ne smete uporabiti vgrajene funkcije [List.rev] ali [List.rev_append].
 [*----------------------------------------------------------------------------*)
 
-let rec reverse = ()
+let rec reverse lst = function
+  | [] -> []
+  | lst :: x -> reverse lst @ [x]
 
 (*----------------------------------------------------------------------------*]
  Funkcija [map_tlrec] je repno rekurzivna različica funkcije [map].
@@ -59,7 +83,12 @@ let rec reverse = ()
  - : int list = [2; 3; 4; 5; 6]
 [*----------------------------------------------------------------------------*)
 
-let rec map_tlrec = ()
+let map_tlrec f lst =
+  let rec map_tlerc_aux acc = function
+    | [] -> acc 
+    | x :: xs -> map_tlerc_aux ((f x) :: acc) xs 
+  in
+  map_tlerc_aux [] lst
 
 (*----------------------------------------------------------------------------*]
  Funkcija [mapi] je ekvivalentna python kodi:
@@ -138,7 +167,10 @@ let rec loop = ()
  - : string = "FICUS"
 [*----------------------------------------------------------------------------*)
 
-let rec fold_left_no_acc = ()
+let rec fold_left_no_acc = function
+  | [] | [x] -> failwith "Seznam je prekratek"
+  | x :: y :: [] -> f x y
+  | x :: y :: tail -> fold_left_no_acc f (f x y :: tail)
 
 (*----------------------------------------------------------------------------*]
  Funkcija [apply_sequence f x n] vrne seznam zaporednih uporab funkcije [f] na
