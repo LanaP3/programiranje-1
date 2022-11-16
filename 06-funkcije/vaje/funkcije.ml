@@ -167,8 +167,8 @@ let rec loop = ()
  - : string = "FICUS"
 [*----------------------------------------------------------------------------*)
 
-let rec fold_left_no_acc = function
-  | [] | [x] -> failwith "Seznam je prekratek"
+let rec fold_left_no_acc f = function
+  | [] | _ :: [] -> failwith "Seznam je prekratek"
   | x :: y :: [] -> f x y
   | x :: y :: tail -> fold_left_no_acc f (f x y :: tail)
 
