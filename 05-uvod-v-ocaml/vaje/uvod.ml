@@ -108,9 +108,12 @@ let rec double lst =
  - : int list = [1; 0; 0; 0; 0; 0]
 [*----------------------------------------------------------------------------*)
 
-let rec insert x k = function
+let rec insert x k lst =
+  match lst with
   | [] -> [x]
-  | y :: ys -> if k <= 0 then x :: y :: ys else y :: insert x k ys
+  | y :: ys -> 
+      if k <= 0 then x :: y :: ys 
+      else y :: insert x (k-1) ys
 
 (*----------------------------------------------------------------------------*]
  Funkcija [divide k list] seznam razdeli na dva seznama. Prvi vsebuje prvih [k]
@@ -122,9 +125,15 @@ let rec insert x k = function
  # divide 7 [1; 2; 3; 4; 5];;
  - : int list * int list = ([1; 2; 3; 4; 5], [])
 [*----------------------------------------------------------------------------*)
-
-let rec divide = ()
-
+let divide k lst=
+  let rec divide_aux acc k lst =
+    match (acc, lst) with
+    | (acc, []) -> (acc, [])
+    | (acc, x :: xs) -> 
+        if k <= 0 then (acc, x :: xs)
+        else divide_aux (acc @ [x]) (k-1) xs
+  in divide_aux [] k lst
+  
 (*----------------------------------------------------------------------------*]
  Funkcija [rotate n list] seznam zavrti za [n] mest v levo. Predpostavimo, da
  je [n] v mejah seznama.
@@ -133,7 +142,12 @@ let rec divide = ()
  - : int list = [3; 4; 5; 1; 2]
 [*----------------------------------------------------------------------------*)
 
-let rec rotate = ()
+let rec rotate n lst = 
+  match lst with
+  | [] -> []
+  | x :: xs -> 
+      if n = 0 then x :: xs
+      else rotate (n-1) xs @ [x]
 
 (*----------------------------------------------------------------------------*]
  Funkcija [remove x list] iz seznama izbriše vse pojavitve elementa [x].
@@ -142,7 +156,12 @@ let rec rotate = ()
  - : int list = [2; 3; 2; 3]
 [*----------------------------------------------------------------------------*)
 
-let rec remove = ()
+let rec remove x lst =
+  match lst with
+  | [] -> []
+  | y :: ys -> 
+      if x = y then remove x ys
+      else y :: remove x ys
 
 (*----------------------------------------------------------------------------*]
  Funkcija [is_palindrome] za dani seznam ugotovi ali predstavlja palindrom.
@@ -154,7 +173,12 @@ let rec remove = ()
  - : bool = false
 [*----------------------------------------------------------------------------*)
 
-let rec is_palindrome = ()
+let is_palindrome sez =
+  let rec reverse = function
+    | [] -> []
+    | x :: xs -> reverse xs @ [x]
+  in
+  sez = reverse sez 
 
 (*----------------------------------------------------------------------------*]
  Funkcija [max_on_components] sprejme dva seznama in vrne nov seznam, katerega
@@ -165,7 +189,12 @@ let rec is_palindrome = ()
  - : int list = [5; 4; 3; 3; 4]
 [*----------------------------------------------------------------------------*)
 
-let rec max_on_components = ()
+let rec max_on_components sez1 sez2 =
+  match (sez1, sez2) with
+  | ([], _) | (_, []) -> []
+  | (x :: xs, y :: ys) -> 
+      if x < y then y :: max_on_components xs ys
+      else x :: max_on_components xs ys
 
 (*----------------------------------------------------------------------------*]
  Funkcija [second_largest] vrne drugo največjo vrednost v seznamu. Pri tem se
@@ -177,4 +206,10 @@ let rec max_on_components = ()
  - : int = 10
 [*----------------------------------------------------------------------------*)
 
-let rec second_largest = ()
+let second_largest sez = 
+  let rec largest = function
+    | [] -> failwith " List is too short."
+    | x :: [] -> x
+    | x :: xs -> max x (largest xs)
+  in
+  largest (remove (largest sez) sez) 
