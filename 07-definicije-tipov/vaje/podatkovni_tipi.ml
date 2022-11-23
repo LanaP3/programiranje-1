@@ -172,9 +172,9 @@ type magic_counter = { fire: int; frost: int; arcane: int}
                      
 let update counter magic = 
   match magic with
-  | Fire -> magic_counter
-  | Frost ->
-  | Arcane ->
+  | Fire -> {counter with (fire = counter.fire + 1)}
+  | Frost -> {counter with (fire = counter.frost + 1)}
+  | Arcane -> {counter with (fire = counter.arcane + 1)}
 
 (*----------------------------------------------------------------------------*]
  Funkcija [count_magic] sprejme seznam čarodejev in vrne števec uporabnikov
@@ -184,7 +184,7 @@ let update counter magic =
  - : magic_counter = {fire = 3; frost = 0; arcane = 0}
 [*----------------------------------------------------------------------------*)
 
-      let rec count_magic = ()
+let rec count_magic = ()
 
 (*----------------------------------------------------------------------------*]
  Želimo poiskati primernega kandidata za delovni razpis. Študent lahko postane
