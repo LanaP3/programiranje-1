@@ -67,13 +67,13 @@ let foldi_grid (f : int -> int -> 'a -> 'acc -> 'acc) (grid : 'a grid)
   let acc, _ =
     Array.fold_left
       (fun (acc, row_ind) row ->
-        let acc, _ =
-          Array.fold_left
-            (fun (acc, col_ind) cell ->
-              (f row_ind col_ind cell acc, col_ind + 1))
-            (acc, 0) row
-        in
-        (acc, row_ind + 1))
+         let acc, _ =
+           Array.fold_left
+             (fun (acc, col_ind) cell ->
+                (f row_ind col_ind cell acc, col_ind + 1))
+             (acc, 0) row
+         in
+         (acc, row_ind + 1))
       (acc, 0) grid
   in
   acc
@@ -101,7 +101,7 @@ let print_problem problem : unit =
   print_grid (
     fun c -> match c with 
       | None -> " " 
-      | Some i -> str_of_int i
+      | Some i -> string_of_int i
   ) problem
 
 let problem_of_string str =
@@ -125,17 +125,17 @@ type available = { loc : int * int; possible : int list }
 
 (* TODO: tip stanja ustrezno popravite, saj boste med reševanjem zaradi učinkovitosti
    želeli imeti še kakšno dodatno informacijo *)
-type state = { problem : Model.problem; current_grid : int option Model.grid }
+type state = { problem : problem; current_grid : int option grid }
 
 let print_state (state : state) : unit =
-  Model.print_grid
+  print_grid
     (function None -> "?" | Some digit -> string_of_int digit)
     state.current_grid
 
-type response = Solved of Model.solution | Unsolved of state | Fail of state
+type response = Solved of solution | Unsolved of state | Fail of state
 
-let initialize_state (problem : Model.problem) : state =
-  { current_grid = Model.copy_grid problem.initial_grid; problem }
+let initialize_state (problem : problem) : state =
+  { current_grid = copy_grid problem.initial_grid; problem }
 
 let validate_state (state : state) : response =
   let unsolved =
@@ -144,8 +144,8 @@ let validate_state (state : state) : response =
   if unsolved then Unsolved state
   else
     (* Option.get ne bo sprožil izjeme, ker so vse vrednosti v mreži oblike Some x *)
-    let solution = Model.map_grid Option.get state.current_grid in
-    if Model.is_valid_solution state.problem solution then Solved solution
+    let solution = map_grid Option.get state.current_grid in
+    if is_valid_solution state.problem solution then Solved solution
     else Fail state
 
 let branch_state (state : state) : (state * state) option =
@@ -187,7 +187,7 @@ and explore_state (state : state) =
           (* če prva možnost ne vodi do rešitve, raziščemo še drugo možnost *)
           solve_state st2 )
 
-let solve_problem (problem : Model.problem) =
+let solve_problem (problem : problem) =
   problem |> initialize_state |> solve_state
 
 
@@ -195,59 +195,60 @@ let read_problem filename =
   let channel = open_in filename in
   let str = really_input_string channel (in_channel_length channel) in
   close_in channel;
-  Model.problem_of_string str
-
+  problem_of_string str
+  
 let find_solution problem =
   let before = Sys.time () in
-  let solution = Solver.solve_problem problem in
+  let solution = solve_problem problem in
   let after = Sys.time () in
   let elapsed_time = after -. before in
   (solution, elapsed_time)
-
+  
 let display_solution = function
   | Some solution ->
       Printf.printf "Končna rešitev:\n";
-      Model.print_solution solution
+      print_solution solution
   | None -> Printf.printf "Rešitev ne obstaja.\n"
-
-let find_and_display_solution (problem : Model.problem) =
+  
+let find_and_display_solution (problem : problem) =
   Printf.printf "Rešujem:\n";
-  Model.print_problem problem;
+  print_problem problem.problem_grid;
   Printf.printf "\n%!";
   let response, elapsed_time = find_solution problem in
   display_solution response;
   Printf.printf "Čas reševanja: %f s.\n%!" elapsed_time
-
+  
 let () =
-  (* Če se program sesuje, nam to izpiše klicni sklad. *)
+    (* Če se program sesuje, nam to izpiše klicni sklad. *)
   Printexc.record_backtrace true;
-  (* Tabela sistemskih argumentov vsebuje ime klicanega programa ter argumente, ki mu sledijo *)
+    (* Tabela sistemskih argumentov vsebuje ime klicanega programa ter argumente, ki mu sledijo *)
   Sys.argv
-  (* Tabelo pretvorimo v seznam *)
+    (* Tabelo pretvorimo v seznam *)
   |> Array.to_list
-  (* Odstranimo prvi element (ime klicanega programa), da dobimo seznam imen datotek *)
+    (* Odstranimo prvi element (ime klicanega programa), da dobimo seznam imen datotek *)
   |> List.tl
-  (* Iz vsake datoteke preberemo problem *)
+    (* Iz vsake datoteke preberemo problem *)
   |> List.map read_problem
-  (* Probleme zaporedoma rešimo *)
+    (* Probleme zaporedoma rešimo *)
   |> List.iter find_and_display_solution
-
-(* Če domačo nalogo rešujete prek spletnega vmesnika, ki ne podpira branja datotek,
-   lahko delovanje preizkušate prek spodnjega programa. *)
-
-(* let () = "
-┏━━━┯━━━┯━━━┓
-┃483│921│657┃
-┃967│3 5│821┃
-┃251│876│493┃
-┠───┼───┼───┨
-┃548│132│976┃
-┃729│ 64│ 38┃
-┃136│798│ 45┃
-┠───┼───┼───┨
-┃372│689│514┃
-┃814│253│769┃
-┃695│417│382┃
-┗━━━┷━━━┷━━━┛"
-  |> Model.problem_of_string
-  |> find_and_display_solution *)
+  
+  (* Če domačo nalogo rešujete prek spletnega vmesnika, ki ne podpira branja datotek,
+     lahko delovanje preizkušate prek spodnjega programa. *)
+  
+let () = "
+  ┏━━━┯━━━┯━━━┓
+  ┃483│921│657┃
+  ┃967│3 5│821┃
+  ┃251│876│493┃
+  ┠───┼───┼───┨
+  ┃548│132│976┃
+  ┃729│ 64│ 38┃
+  ┃136│798│ 45┃
+  ┠───┼───┼───┨
+  ┃372│689│514┃
+  ┃814│253│769┃
+  ┃695│417│382┃
+  ┗━━━┷━━━┷━━━┛"
+         |> problem_of_string
+         |> find_and_display_solution
+  
