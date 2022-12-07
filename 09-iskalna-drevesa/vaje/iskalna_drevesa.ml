@@ -1,3 +1,7 @@
+(* This is an OCaml editor.
+   Enter your program here and send it to the toplevel using the "Eval code"
+   button or [Ctrl-e]. *)
+
 (* ========== Vaja 4: Iskalna Drevesa  ========== *)
 
 (*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*]
@@ -6,7 +10,12 @@
  poddrevesi. Na tej točki ne predpostavljamo ničesar drugega o obliki dreves.
 [*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*)
 
-
+type 'a tree =
+  | Empty
+  | Node of 'a tree * 'a * 'a tree
+              
+let leaf x = Node(Empty, x, Empty) 
+    
 (*----------------------------------------------------------------------------*]
  Definirajmo si testni primer za preizkušanje funkcij v nadaljevanju. Testni
  primer predstavlja spodaj narisano drevo, pomagamo pa si s pomožno funkcijo
@@ -17,7 +26,7 @@
        /   / \
       0   6   11
 [*----------------------------------------------------------------------------*)
-
+let test = Node(Node(leaf 0, 2, Empty), 5, Node(leaf 6, 7, leaf 11))
 
 (*----------------------------------------------------------------------------*]
  Funkcija [mirror] vrne prezrcaljeno drevo. Na primeru [test_tree] torej vrne
@@ -32,7 +41,10 @@
  Node (Node (Node (Empty, 11, Empty), 7, Node (Empty, 6, Empty)), 5,
  Node (Empty, 2, Node (Empty, 0, Empty)))
 [*----------------------------------------------------------------------------*)
-
+let rec mirror tree =
+  match tree with
+  | Empty -> Empty
+  | Node(left, x, right) -> Node(mirror right, x, mirror left) 
 
 (*----------------------------------------------------------------------------*]
  Funkcija [height] vrne višino oz. globino drevesa, funkcija [size] pa število
@@ -43,8 +55,19 @@
  # size test_tree;;
  - : int = 6
 [*----------------------------------------------------------------------------*)
+let height tree =
+  let rec aux acc tree =
+    match tree with
+    | Empty -> acc
+    | Node(left, x, right) -> max(aux (acc+1) left)(aux (acc+1) right)
+  in aux 0 tree
 
-
+let size tree =
+  let rec aux acc tree =
+    match tree with
+    | Empty -> acc
+    | Node(left, x, right) -> (aux (acc+1) left) + (aux (acc+1) right)
+  in aux 0 tree
 (*----------------------------------------------------------------------------*]
  Funkcija [map_tree f tree] preslika drevo v novo drevo, ki vsebuje podatke
  drevesa [tree] preslikane s funkcijo [f].
