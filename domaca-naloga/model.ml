@@ -43,9 +43,9 @@ let print_grid string_of_cell grid =
 
 (* Funkcije za dostopanje do elementov mreže *)
 
-let get_row (grid : 'a grid) (row_ind : int) = failwith "TODO"
-
-let rows grid = failwith "TODO"
+let get_row (grid : 'a grid) (row_ind : int) = 
+  Array.init 9 (fun col_ind -> grid.(row_ind).(col_ind))
+let rows grid = List.init 9 (get_row grid)
 
 let get_column (grid : 'a grid) (col_ind : int) =
   Array.init 9 (fun row_ind -> grid.(row_ind).(col_ind))

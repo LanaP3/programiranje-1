@@ -8,6 +8,9 @@
  # let l = randlist 10 10 ;;
  val l : int list = [0; 1; 0; 4; 0; 9; 1; 2; 5; 4]
 [*----------------------------------------------------------------------------*)
+let rec randlist len max =
+  if len <=0 then []
+  else Random.int max :: (randlist (len-1) max)
 
 
 (*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*]
@@ -17,7 +20,6 @@
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  let test = (randlist 100 100) in (our_sort test = List.sort compare test);;
 [*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*)
-
 
 (*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*]
  Urejanje z Vstavljanjem
@@ -34,13 +36,19 @@
  # insert 7 [];;
  - : int list = [7]
 [*----------------------------------------------------------------------------*)
+let rec insert y xs =
+  match xs with
+  |[] -> [y]
+  |x::xs when y<=x -> [y;x] @ xs
+  |x::xs -> x :: insert y xs
 
 
 (*----------------------------------------------------------------------------*]
  Prazen seznam je že urejen. Funkcija [insert_sort] uredi seznam tako da
  zaporedoma vstavlja vse elemente seznama v prazen seznam.
 [*----------------------------------------------------------------------------*)
-
+let insert_sort list =
+  List.fold_left (fun acc x -> insert x acc) [] list
 
 
 (*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*]
@@ -52,7 +60,27 @@
  najmanjši element v [list] in seznam [list'] enak [list] z odstranjeno prvo
  pojavitvijo elementa [z]. V primeru praznega seznama vrne [None]. 
 [*----------------------------------------------------------------------------*)
-
+let min_and_rest list =
+  let rec find_min acc list =
+    match list with
+    |[] -> acc
+    |x::xs when x<acc -> find_min x xs
+    |x::xs -> find_min acc xs
+  in 
+  let rec remove_one y list =
+    match list with
+    |[] -> []
+    |x::xs when x=y -> remove_one y xs
+    |x::xs -> x::(remove_one y xs)
+  in
+  match list with
+  |[] -> None
+  |x::xs -> (*uporabi find_min in remove_one*)
+    let z = find_min x xs
+    in
+    let rest = remove_one z list
+    in
+    Some(z, rest)
 
 (*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*]
  Pri urejanju z izbiranjem na vsakem koraku ločimo dva podseznama, kjer je prvi
@@ -72,7 +100,13 @@
  Namig: Uporabi [min_and_rest] iz prejšnje naloge.
 [*----------------------------------------------------------------------------*)
 
-
+let select_sort list =
+  let rec aux acc list =
+    match min_and_rest list with
+    |None -> []
+    |Some(z, rest) -> aux (z::acc) rest
+  in 
+  List.rev (aux [] list)
 
 (*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*]
  Urejanje z Izbiranjem na Tabelah
@@ -100,14 +134,22 @@
  # test;;
  - : int array = [|0; 4; 2; 3; 1|]
 [*----------------------------------------------------------------------------*)
-
-
+let swap a i j =
+  let v = a.(i) in
+  a.(i) <- a.(j);
+  a.(j) <- v
 (*----------------------------------------------------------------------------*]
  Funkcija [index_min a lower upper] poišče indeks najmanjšega elementa tabele
  [a] med indeksoma [lower] and [upper] (oba indeksa sta vključena).
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  index_min [|0; 2; 9; 3; 6|] 2 4 = 4
 [*----------------------------------------------------------------------------*)
+let rec index_min a lower upper =
+  let im = ref lower in
+  for i = lower to upper do
+    if a.(i) < a.(!im) then im := i
+  done;
+  !im
 
 
 (*----------------------------------------------------------------------------*]
@@ -116,4 +158,9 @@
  Namig: Za testiranje uporabi funkciji [Array.of_list] in [Array.to_list]
  skupaj z [randlist].
 [*----------------------------------------------------------------------------*)
-
+let selection_sort_array a =
+  let index_end = Array.length a -1 in
+  for boundary_sorted = 0 to index_end do
+    let i = index_min a boundary_sorted index_end in
+    swap a i boundary_sorted     
+  done

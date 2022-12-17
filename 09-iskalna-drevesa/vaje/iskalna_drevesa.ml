@@ -63,11 +63,11 @@ let height tree =
   in aux 0 tree
 
 let size tree =
-  let rec aux acc tree =
+  let rec aux tree =
     match tree with
-    | Empty -> acc
-    | Node(left, x, right) -> (aux (acc+1) left) + (aux (acc+1) right)
-  in aux 0 tree
+    | Empty -> 0
+    | Node(left, x, right) -> 1 + (aux left) + (aux right)
+  in aux tree
 (*----------------------------------------------------------------------------*]
  Funkcija [map_tree f tree] preslika drevo v novo drevo, ki vsebuje podatke
  drevesa [tree] preslikane s funkcijo [f].
@@ -77,7 +77,10 @@ let size tree =
  Node (Node (Node (Empty, false, Empty), false, Empty), true,
  Node (Node (Empty, true, Empty), true, Node (Empty, true, Empty)))
 [*----------------------------------------------------------------------------*)
-
+let rec map_tree f tree =
+  match tree with
+  | Empty -> Empty
+  | Node(left, x, right) -> Node(map_tree f left, f x, map_tree f right)
 
 (*----------------------------------------------------------------------------*]
  Funkcija [list_of_tree] pretvori drevo v seznam. Vrstni red podatkov v seznamu
@@ -86,7 +89,10 @@ let size tree =
  # list_of_tree test_tree;;
  - : int list = [0; 2; 5; 6; 7; 11]
 [*----------------------------------------------------------------------------*)
-
+let rec list_of_tree tree =
+  match tree with
+  | Empty -> []
+  | Node(left, x, right) -> (list_of_tree left) @ [x] @ (list_of_tree left)
 
 (*----------------------------------------------------------------------------*]
  Funkcija [is_bst] preveri ali je drevo binarno iskalno drevo (Binary Search 
@@ -98,6 +104,17 @@ let size tree =
  # test_tree |> mirror |> is_bst;;
  - : bool = false
 [*----------------------------------------------------------------------------*)
+let is_bst tree =
+  let rec aux acc sez =
+    match sez with
+    | [] -> true
+    | x :: xs -> 
+      if x < acc then false
+      else aux x xs
+  in
+  match list_of_tree tree with
+  | [] -> true
+  | x :: xs -> aux x xs
 
 
 (*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*]
@@ -113,16 +130,29 @@ let size tree =
  # member 3 test_tree;;
  - : bool = false
 [*----------------------------------------------------------------------------*)
+let rec insert x tree =
+  match tree with
+  | Empty -> leaf x
+  | Node(left, y, right) -> 
+      if x < y then Node(insert x left, y, right)
+      else Node(left, y, insert x right)
 
-
+let rec member x tree =
+  match tree with
+  | Empty -> false
+  | Node(left, y, right) when x = y -> true
+  | Node(left, y, right) when x < y -> member x left
+  | Node(left, y, right) -> member x right
 (*----------------------------------------------------------------------------*]
  Funkcija [member2] ne privzame, da je drevo bst.
  
  Opomba: Premislte kolikšna je časovna zahtevnost funkcije [member] in kolikšna
  funkcije [member2] na drevesu z n vozlišči, ki ima globino log(n). 
 [*----------------------------------------------------------------------------*)
-
-
+let rec member2 x tree =
+  match tree with
+  | Empty -> false
+  | Node(left, y, right) -> x = y || member2 x left || member2 y right
 (*----------------------------------------------------------------------------*]
  Funkcija [succ] vrne naslednjika korena danega drevesa, če obstaja. Za drevo
  oblike [bst = Node(l, x, r)] vrne najmanjši element drevesa [bst], ki je večji
@@ -135,6 +165,7 @@ let size tree =
  # pred (Node(Empty, 5, leaf 7));;
  - : int option = None
 [*----------------------------------------------------------------------------*)
+let succ tree =
 
 
 (*----------------------------------------------------------------------------*]
