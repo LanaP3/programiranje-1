@@ -82,6 +82,23 @@
 #     [1, 1, 2, 3, 3, 4, 5, 5, 6, 7, 7, 10]
 #
 ###############################################################################
+def merge(target, list_1, list_2):
+    i1 = 0
+    i2 = 0
+    while i1 < len(list_1) and i2 < len(list_2):
+        if list_2[0] < list_1[0]:
+            target[i1+i2] = list_1[0]
+            merge(target, list_1[1:], list_2)
+        else:
+            target[i1+i2] = list_2[0]
+            merge(target, list_1, list_2[1:])
+    while i1 < len(list_1):
+        target[i1+i2] = list_1[i1]
+        i1 += 1
+    while i2 < len(list_2):
+        target[i1+i2] = list_2[i2]
+        i2 += 1
+    
 
 
 ###############################################################################

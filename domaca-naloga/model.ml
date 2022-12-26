@@ -45,6 +45,7 @@ let print_grid string_of_cell grid =
 
 let get_row (grid : 'a grid) (row_ind : int) = 
   Array.init 9 (fun col_ind -> grid.(row_ind).(col_ind))
+
 let rows grid = List.init 9 (get_row grid)
 
 let get_column (grid : 'a grid) (col_ind : int) =
@@ -52,13 +53,18 @@ let get_column (grid : 'a grid) (col_ind : int) =
 
 let columns grid = List.init 9 (get_column grid)
 
-let get_box (grid : 'a grid) (box_ind : int) = failwith "TODO"
+let get_box (grid : 'a grid) (box_ind : int) = 
+  let row_start = 3 * (box_ind / 3) in 
+  let column_start = 3 * (box_ind mod 3) in
+  let box_list = List.init 3 (fun col_ind -> Array.init 3 (fun row_ind -> grid.(row_ind + row_start).(col_ind + column_start))) in
+  Array.concat box_list
 
-let boxes grid = failwith "TODO"
+let boxes grid = List.init 9 (get_box grid)
 
 (* Funkcije za ustvarjanje novih mrež *)
 
-let map_grid (f : 'a -> 'b) (grid : 'a grid) : 'b grid = failwith "TODO"
+let map_grid (f : 'a -> 'b) (grid : 'a grid) : 'b grid = 
+  Array.map (Array.map f) grid
 
 let copy_grid (grid : 'a grid) : 'a grid = map_grid (fun x -> x) grid
 
@@ -97,7 +103,13 @@ let grid_of_string cell_of_char str =
 
 type problem = { initial_grid : int option grid }
 
-let print_problem problem : unit = failwith "TODO"
+let print_problem problem : unit =
+  let string_of_cell cell =
+    match cell with
+    | None -> " "
+    | Some n -> string_of_int n
+  in
+  print_grid string_of_cell problem.initial_grid
 
 let problem_of_string str =
   let cell_of_char = function
@@ -111,6 +123,23 @@ let problem_of_string str =
 
 type solution = int grid
 
-let print_solution solution = failwith "TODO"
+let print_solution solution = 
+  print_grid string_of_int solution
 
-let is_valid_solution problem solution = failwith "TODO"
+(* Je veljaven, torej ali vsaka vrstica, stolpec, škatla vsebuje vse številke? *)
+let check_valid solution =
+  let sudoku = rows solution @ columns solution @ boxes solution
+  in
+  let check n =
+    List.fold_left (&&) true (List.map (Array.exists ((=)(n+1))) sudoku)
+  in
+  List.fold_left (&&) true (List.init 9 check)
+    
+(* Ali pripada pravemu sudokuju? *)
+let correct_problem problem solution =
+  let check n =
+    Array.fold_left (&&) true (Array.map2 (fun a b -> a = b) problem.(n) solution.(n)) in
+  List.fold_left (&&) true (List.init 9 check)
+
+let is_valid_solution problem solution =
+  (check_valid solution) && (correct_problem problem solution)
