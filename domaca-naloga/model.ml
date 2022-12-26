@@ -123,11 +123,11 @@ let problem_of_string str =
 
 type solution = int grid
 
-let print_solution solution = 
+let print_solution (solution: solution) = 
   print_grid string_of_int solution
 
 (* Je veljaven, torej ali vsaka vrstica, stolpec, škatla vsebuje vse številke? *)
-let check_valid solution =
+let check_valid (solution: solution) =
   let sudoku = rows solution @ columns solution @ boxes solution
   in
   let check n =
@@ -136,10 +136,16 @@ let check_valid solution =
   List.fold_left (&&) true (List.init 9 check)
     
 (* Ali pripada pravemu sudokuju? *)
-let correct_problem problem solution =
+let correct_problem (problem: problem) (solution: solution) =
+  let compare (a: int option) (b: int) =
+    match a with
+    | None -> true
+    | Some a -> a = b
+  in
   let check n =
-    Array.fold_left (&&) true (Array.map2 (fun a b -> a = b) problem.(n) solution.(n)) in
+    Array.fold_left (&&) true (Array.map2 compare problem.initial_grid.(n) solution.(n))
+  in
   List.fold_left (&&) true (List.init 9 check)
 
-let is_valid_solution problem solution =
+let is_valid_solution (problem: problem) (solution: solution) =
   (check_valid solution) && (correct_problem problem solution)
