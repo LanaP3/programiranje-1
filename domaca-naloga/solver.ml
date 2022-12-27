@@ -3,15 +3,15 @@ type available = { loc : int * int; possible : int list }
 (* TODO: tip stanja ustrezno popravite, saj boste med reševanjem zaradi učinkovitosti
    želeli imeti še kakšno dodatno informacijo *)
 (* available_grid je tabela available tipov, ki vsebuje vse mmožne številke na posameznem mestu *)
-type state = { problem : Model.problem; current_grid : int option Model.grid; available_grid : int list Model.grid}
+type state = { problem : Model.problem; current_grid : int option Model.grid; available_list : available list}
 
 let find_available (grid : int option Model.grid ) =
-  let available_list n =
-    match n with
-    | None -> [0; 1; 2; 3; 4; 5; 6; 7; 8; 9]
-    | Some n -> [n]
+  let find_available a b cell available_list =
+    match cell with
+    | None -> available_list @ [{loc = a, b; possible = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9]}]
+    | Some n -> available_list
   in
-  Model.map_grid available_list grid
+  Model.foldi_grid find_available grid []
 
 let print_state (state : state) : unit =
   Model.print_grid
@@ -21,7 +21,7 @@ let print_state (state : state) : unit =
 type response = Solved of Model.solution | Unsolved of state | Fail of state
 
 let initialize_state (problem : Model.problem) : state =
-  { current_grid = Model.copy_grid problem.initial_grid; problem; available_grid = find_available problem.initial_grid }
+  { current_grid = Model.copy_grid problem.initial_grid; problem; available_list = find_available problem.initial_grid }
 
 let validate_state (state : state) : response =
   let unsolved =
@@ -35,24 +35,43 @@ let validate_state (state : state) : response =
     else Fail state
 
 
-let branch_state (state : state) =
+let branch_state (state : state) : (state * state) option =
   (* TODO: Pripravite funkcijo, ki v trenutnem stanju poišče hipotezo, glede katere
      se je treba odločiti. Če ta obstaja, stanje razveji na dve stanji:
      v prvem predpostavi, da hipoteza velja, v drugem pa ravno obratno.
      Če bo vaš algoritem najprej poizkusil prvo možnost, vam morda pri drugi
      za začetek ni treba zapravljati preveč časa, saj ne bo nujno prišla v poštev. : (state * state) option *)
-  let state_1 = state in
-  let state_2 = state in
-  let rec choose_option grid i a b =
-    match grid.(a).(b) with
-    | x :: xs -> state_1.available_grid.(a).(b) <- x in state_2.available_grid.(a).(b) <- xs.(0)
-    | [x] when a <> 9 -> choose_option grid i (a + 1) b
-    | [x] when b <> 9 -> choose_option grid i+1 i (b + 1)
-    | else -> validate_state
+  if state.available_list = [] then None
+  else
+
+  let x,y = (List.nth state.available_list 0).loc in
+  let n = List.nth (List.nth state.available_list 0).possible 0 in
+
+  let update_state (grid: int option Model.grid) (x: int) (y: int) (n: int) =
+    let new_grid = Model.copy_grid grid in
+    grid.(x).(y) <- Some n;
+    {problem = state.problem; current_grid = new_grid; available_list = find_available new_grid}
   in
-  choose_option state.available_grid 0 0 0
+  let remove_first (list: int list) =
+    match list with
+    | x :: xs -> xs
+    | lst -> failwith "Napaka"
   in
-  (state_1, state_2)
+  let new_list (list: available list) =
+    match list with
+    | x :: xs -> { loc = x.loc; possible = remove_first x.possible } :: xs
+    | list -> [{ loc = (List.nth list 0).loc; possible = remove_first (List.nth list 0).possible }]
+  in
+  let other_state (state: state) =
+    let x,y = (List.nth state.available_list 0).loc in
+    let new_grid = Model.copy_grid state.current_grid in
+    match (List.nth state.available_list 0).possible with
+      | n :: [m] -> update_state new_grid x y m
+      | lst -> {problem = state.problem; current_grid = new_grid; available_list = new_list state.available_list}
+  in
+  
+  Some (update_state state.current_grid x y n, other_state state)
+      
 
 (* pogledamo, če trenutno stanje vodi do rešitve *)
 let rec solve_state (state : state) =
