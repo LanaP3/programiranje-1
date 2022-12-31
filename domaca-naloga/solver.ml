@@ -1,4 +1,4 @@
-type available = { loc : int * int; possible : int list }
+type available = { loc : int * int; mutable possible : int list }
 
 (* TODO: tip stanja ustrezno popravite, saj boste med reševanjem zaradi učinkovitosti
    želeli imeti še kakšno dodatno informacijo *)
@@ -6,12 +6,12 @@ type available = { loc : int * int; possible : int list }
 type state = { problem : Model.problem; current_grid : int option Model.grid; available_list : available list}
 
 let find_available (grid : int option Model.grid ) =
-  let find_available a b cell available_list =
+  let available a b cell available_list =
     match cell with
     | None -> available_list @ [{loc = a, b; possible = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9]}]
     | Some n -> available_list
   in
-  Model.foldi_grid find_available grid []
+  Model.foldi_grid available grid []
 
 let print_state (state : state) : unit =
   Model.print_grid
@@ -43,34 +43,49 @@ let branch_state (state : state) : (state * state) option =
      za začetek ni treba zapravljati preveč časa, saj ne bo nujno prišla v poštev. : (state * state) option *)
   if state.available_list = [] then None
   else
-
-  let x,y = (List.nth state.available_list 0).loc in
-  let n = List.nth (List.nth state.available_list 0).possible 0 in
-
-  let update_state (grid: int option Model.grid) (x: int) (y: int) (n: int) =
-    let new_grid = Model.copy_grid grid in
-    grid.(x).(y) <- Some n;
-    {problem = state.problem; current_grid = new_grid; available_list = find_available new_grid}
-  in
+  
+  (* če je v prvi opciji samo ena možnost, sudoku posodobimo in iz available_lista izbrišemo prvo delitev, to nadaljujemo dokler ni možnosti delitve *)
   let remove_first (list: int list) =
     match list with
     | x :: xs -> xs
     | lst -> failwith "Napaka"
   in
-  let new_list (list: available list) =
-    match list with
-    | x :: xs -> { loc = x.loc; possible = remove_first x.possible } :: xs
-    | list -> [{ loc = (List.nth list 0).loc; possible = remove_first (List.nth list 0).possible }]
+  let update_sudoku state loc n =
+    let x,y = loc in
+    state.current_grid.(x).(y) <- n;
+    (List.nth state.available_list 0).possible <- remove_first (List.nth state.available_list 0).possible;
+    state
   in
-  let other_state (state: state) =
-    let x,y = (List.nth state.available_list 0).loc in
+  let rec one_option (state: state) =
+    let avail = (List.nth (state.available_list) 0) in
+    if List.length avail.possible < 2 then one_option (update_sudoku state avail.loc (Some (List.nth avail.possible 0)))
+    else state
+  in
+
+  (* Imamo dve možnosti, lahko razdelimo *)
+  let find_1 (state: state) x y n =
     let new_grid = Model.copy_grid state.current_grid in
-    match (List.nth state.available_list 0).possible with
-      | n :: [m] -> update_state new_grid x y m
-      | lst -> {problem = state.problem; current_grid = new_grid; available_list = new_list state.available_list}
+    new_grid.(x).(y) <- Some n;
+    {problem = state.problem; current_grid = new_grid; available_list = find_available new_grid}
   in
-  
-  Some (update_state state.current_grid x y n, other_state state)
+  let new_list (avail: available list) =
+    let new_avail = avail in
+    (List.nth new_avail 0).possible <- remove_first (List.nth new_avail 0).possible;
+    new_avail
+  in
+  let find_2 (state: state) x y n =
+    {problem = state.problem; current_grid = state.current_grid; available_list = new_list state.available_list}
+  in
+  let branch (state: state) =
+    let avail = (List.nth (state.available_list) 0) in
+    let x,y = avail.loc in
+    let n = List.nth avail.possible 0 in
+    let state_1 = find_1 state x y n in
+    let state_2 = find_2 state x y n in
+    Some (state_1,state_2)
+  in
+  (* združimo *)
+  state |> one_option |> branch
       
 
 (* pogledamo, če trenutno stanje vodi do rešitve *)
