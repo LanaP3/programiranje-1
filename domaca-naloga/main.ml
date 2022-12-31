@@ -11,6 +11,7 @@ let find_solution problem =
   let elapsed_time = after -. before in
   (solution, elapsed_time)
 
+  
 let display_solution = function
   | Some solution ->
       Printf.printf "Končna rešitev:\n";

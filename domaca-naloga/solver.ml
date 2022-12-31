@@ -51,21 +51,24 @@ let branch_state (state : state) : (state * state) option =
     | lst -> failwith "Napaka"
   in
   let update_sudoku state loc n =
-    let x,y = loc in
+    let x, y = loc in
     state.current_grid.(x).(y) <- n;
     (List.nth state.available_list 0).possible <- remove_first (List.nth state.available_list 0).possible;
     state
   in
   let rec one_option (state: state) =
     let avail = (List.nth (state.available_list) 0) in
-    if List.length avail.possible < 2 then one_option (update_sudoku state avail.loc (Some (List.nth avail.possible 0)))
+    if List.length avail.possible = 1 then one_option (update_sudoku state avail.loc (Some (List.nth avail.possible 0)))
     else state
   in
 
   (* Imamo dve možnosti, lahko razdelimo *)
-  let find_1 (state: state) x y n =
+  let find_1 (state: state) =
+    let avail = (List.nth (state.available_list) 0) in
+    let x, y = avail.loc in
+    let n = Some (List.nth avail.possible 0) in
     let new_grid = Model.copy_grid state.current_grid in
-    new_grid.(x).(y) <- Some n;
+    new_grid.(x).(y) <- n;
     {problem = state.problem; current_grid = new_grid; available_list = find_available new_grid}
   in
   let new_list (avail: available list) =
@@ -73,16 +76,15 @@ let branch_state (state : state) : (state * state) option =
     (List.nth new_avail 0).possible <- remove_first (List.nth new_avail 0).possible;
     new_avail
   in
-  let find_2 (state: state) x y n =
+  let find_2 (state: state) =
     {problem = state.problem; current_grid = state.current_grid; available_list = new_list state.available_list}
   in
   let branch (state: state) =
-    let avail = (List.nth (state.available_list) 0) in
-    let x,y = avail.loc in
-    let n = List.nth avail.possible 0 in
-    let state_1 = find_1 state x y n in
-    let state_2 = find_2 state x y n in
-    Some (state_1,state_2)
+    if state.available_list = [] then None
+    else
+    let state_1 = find_1 state in
+    let state_2 = find_2 state in
+    Some (state_1, state_2)
   in
   (* združimo *)
   state |> one_option |> branch
