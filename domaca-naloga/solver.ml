@@ -3,7 +3,7 @@ type available = { loc : int * int; mutable possible : int list }
 (* TODO: tip stanja ustrezno popravite, saj boste med reševanjem zaradi učinkovitosti
    želeli imeti še kakšno dodatno informacijo *)
 (* available_grid je tabela available tipov, ki vsebuje vse mmožne številke na posameznem mestu *)
-type state = { problem : Model.problem; current_grid : int option Model.grid; available_list : available list}
+type state = { problem : Model.problem; current_grid : int option Model.grid; mutable available_list : available list}
 
 let find_available (grid : int option Model.grid ) =
   let available a b cell available_list =
@@ -45,7 +45,7 @@ let branch_state (state : state) : (state * state) option =
   else
   
   (* če je v prvi opciji samo ena možnost, sudoku posodobimo in iz available_lista izbrišemo prvo delitev, to nadaljujemo dokler ni možnosti delitve *)
-  let remove_first (list: int list) =
+  let remove_first list =
     match list with
     | x :: xs -> xs
     | lst -> failwith "Napaka"
@@ -53,12 +53,12 @@ let branch_state (state : state) : (state * state) option =
   let update_sudoku state loc n =
     let x, y = loc in
     state.current_grid.(x).(y) <- n;
-    (List.nth state.available_list 0).possible <- remove_first (List.nth state.available_list 0).possible;
+    state.available_list <- remove_first (state.available_list);
     state
   in
-  let rec one_option (state: state) =
+  let one_option (state: state) =
     let avail = (List.nth (state.available_list) 0) in
-    if List.length avail.possible = 1 then one_option (update_sudoku state avail.loc (Some (List.nth avail.possible 0)))
+    if List.length avail.possible = 1 then update_sudoku state avail.loc (Some (List.nth avail.possible 0))
     else state
   in
 
