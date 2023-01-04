@@ -21,6 +21,16 @@ let test_matrix =
      [| 2 ; 4 ; 5 |];
      [| 7 ; 0 ; 1 |] |]
 
+let max_cheese matrix =
+   let rec aux i j =
+      match i, j with
+      | i, j when (i = Array.length matrix) -> 0
+      | i, j when (j = Array.length matrix.(0)) -> 0
+      | i, j -> matrix.(i).(j) + max (aux (i+1) j) (aux i (j+1))
+   in
+   aux 0 0
+
+
 (*----------------------------------------------------------------------------*]
  Poleg količine sira, ki jo miška lahko poje, jo zanima tudi točna pot, ki naj
  jo ubere, da bo prišla do ustrezne pojedine.
@@ -37,7 +47,14 @@ let test_matrix =
 [*----------------------------------------------------------------------------*)
 
 type mouse_direction = Down | Right
-
+let optimal_path matrix =
+   let rec aux acc i j =
+      match i, j with
+      | i, j when (i = Array.length matrix) -> 0
+      | i, j when (j = Array.length matrix.(0)) -> 0
+      | i, j -> matrix.(i).(j) + max (aux (Down::acc) (i+1) j) (aux (Right::acc) i (j+1))
+   in
+   aux [] 0 0
 
 (*----------------------------------------------------------------------------*]
  Rešujemo problem sestavljanja alternirajoče obarvanih stolpov. Imamo štiri
@@ -54,7 +71,17 @@ type mouse_direction = Down | Right
  # alternating_towers 10;;
  - : int = 35
 [*----------------------------------------------------------------------------*)
-
+let alternating_towers n =
+   let rec redbottom height =
+      if height <=0 then 0
+      else if height <= 2 then 1 
+      else bluebottom (height - 1) + bluebottom (height -2)
+   and
+   bluebottom height =
+      if height <= 0 then 0
+      else if height = 2 then 1
+      else redbottom (height - 2) + redbottom (height - 3)
+   in redbottom n + bluebottom n
 
 
 (*----------------------------------------------------------------------------*]
@@ -86,6 +113,13 @@ type red_tower = TopRed of red_block * blue_tower | RedBottom
 and blue_tower = TopBlue of blue_block * red_tower | BlueBottom
 
 type tower = Red of red_tower | Blue of blue_tower
+
+let enumerate_towers height =
+   let rec redbottom height =
+      if height >= 3 then Top
+   and
+   bluebottom height =
+      ...
 
 (*----------------------------------------------------------------------------*]
  Vdrli ste v tovarno čokolade in sedaj stojite pred stalažo kjer so ena ob
