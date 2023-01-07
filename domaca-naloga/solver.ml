@@ -65,23 +65,26 @@ let branch_state (state : state) : (state * state) option =
     aux (0, 0)
   in
 
-  (* Ce najdemo mozno stevilo na dani lokaciji, vzamemo najmanjse in ga spremenimo na false v available_grid, current grid pa kopiramo in vrnemo dve stanji
+  (* Ce najdemo mozno stevilo na dani lokaciji, vzamemo najmanjse in ga spremenimo na false v kopiji available_grid, current grid pa kopiramo in vrnemo dve stanji
     v prvem je vpisano st., v drugem je current_grid isti *)
   let branch ( i : int )  ( j : int ) : (state * state) option =
     let rec aux n =
       match n with
       | 9 -> None
       | n when state.available_grid.(i).(j).(n) = true -> 
-        let new_grid = Model.copy_grid state.current_grid in
-        new_grid.(i).(j) <- Some n;
-        state.available_grid.(i).(j).(n) <- false;
-        Some ({ problem = state.problem; current_grid = new_grid; available_grid = state.available_grid }, state)
+        let grid_1 = Model.copy_grid state.current_grid in
+        let available_2 = Model.copy_grid state.available_grid in
+        grid_1.(i).(j) <- Some (n+1);
+        available_2.(i).(j).(n) <- false;
+        print_state { problem = state.problem; current_grid = grid_1; available_grid = state.available_grid };
+
+        Some ({ problem = state.problem; current_grid = grid_1; available_grid = state.available_grid },
+        { problem = state.problem; current_grid = state.current_grid; available_grid = available_2 })
       | n -> aux (n+1)
     in 
     aux 0
+    
   (* združimo *)
-  (*state |> find_cell |> branch;
-  { problem = state.problem; current_grid = new_grid; available_grid = state.available_grid }, state*)
   in
   match find_cell state with
   | None -> None
