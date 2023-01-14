@@ -10,12 +10,48 @@ from functools import cache
 # Primer: v seznamu `[2, 3, 6, 8, 4, 4, 6, 7, 12, 8, 9]` kot rezultat vrne
 # podzaporedje `[2, 3, 4, 4, 6, 7, 8, 9]`.
 # -----------------------------------------------------------------------------
-
+def najdaljse_narascaroce_podzaporedje (sez):
+    def najdaljse (min, sez):
+        if len(sez) == 0:
+            return [], 0
+        elif sez[0] >= min:
+            brez, n = najdaljse(min, sez[1:])
+            z, m = najdaljse(sez[0], sez[1:])
+            z = [sez[0]]+z
+            m+=1
+            if n<m:
+                return z, m
+            else:
+                return brez, n
+        else:
+            brez, n = najdaljse(min, sez[1:])
+            return brez, n
+    return(najdaljse(0, sez)[0])
+print(najdaljse_narascaroce_podzaporedje([2, 3, 6, 8, 4, 4, 6, 7, 12, 8, 9]))
 # -----------------------------------------------------------------------------
 # Rešitev sedaj popravite tako, da funkcija `vsa_najdaljsa` vrne seznam vseh
 # najdaljših naraščajočih podzaporedij.
 # -----------------------------------------------------------------------------
-
+def vsa_najdaljša (sez):
+    def najdaljse (min, sez):
+        if len(sez) == 0:
+            return [], 0
+        elif sez[0] >= min:
+            brez, n = najdaljse(min, sez[1:])
+            z, m = najdaljse(sez[0], sez[1:])
+            z = [sez[0]]+z
+            m+=1
+            if n<m:
+                return z, m
+            elif m<n:
+                return brez, n
+            else:
+                return z, m, brez, n
+        else:
+            brez, n = najdaljse(min, sez[1:])
+            return brez, n
+    return(najdaljse(0, sez))
+#print(vsa_najdaljša([2, 3, 6, 8, 4, 4, 6, 7, 12, 8, 9, 2, 3, 6, 8, 4, 4, 6, 7, 12, 8, 9]))
 
 
 # =============================================================================
@@ -42,8 +78,16 @@ from functools import cache
 # treh skokih, v močvari `[4, 1, 8, 2, 11, 1, 1, 1, 1, 1]` pa potrebuje zgolj
 # dva.
 # =============================================================================
-
-
+def zabica(mocvara):
+    @cache
+    def skoki(i, e):
+        if i >= len(mocvara):
+            return 0
+        else:
+            e += mocvara[i]
+            st_skokov = 1 + min([skoki(i+x, e-x) for x in range(1,e+1)])
+    return(skoki(0, 0))
+print(zabica([2, 4, 1, 2, 1, 3, 1, 1, 5]))
 
 # =============================================================================
 # Nageljni
