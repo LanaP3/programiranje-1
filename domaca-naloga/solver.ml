@@ -1,27 +1,22 @@
-type available = { loc : int * int; mutable possible : int list }
 
 (* TODO: tip stanja ustrezno popravite, saj boste med reševanjem zaradi učinkovitosti
    želeli imeti še kakšno dodatno informacijo *)
 (* available_grid je tabela available tipov, ki vsebuje vse mmožne številke na posameznem mestu *)
-type state = { problem : Model.problem; current_grid : int option Model.grid; mutable available_list : available list}
+type state = { problem : Model.problem; current_grid : int option Model.grid; available_grid : bool array Model.grid}
 
-let find_available (grid : int option Model.grid ) =
-  let available a b cell available_list =
-    match cell with
-    | None -> available_list @ [{loc = a, b; possible = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9]}]
-    | Some n -> available_list
-  in
-  Model.foldi_grid available grid []
+let create_available (grid : int option Model.grid ) =
+  let available_grid = Array.init 9 (fun _ -> Array.init 9 (fun _ -> (Array.init 9 (fun x -> true)))) in
+  available_grid
 
 let print_state (state : state) : unit =
   Model.print_grid
-    (function None -> "?" | Some digit -> string_of_int digit)
+    (function None -> " " | Some digit -> string_of_int digit)
     state.current_grid
 
 type response = Solved of Model.solution | Unsolved of state | Fail of state
 
 let initialize_state (problem : Model.problem) : state =
-  { current_grid = Model.copy_grid problem.initial_grid; problem; available_list = find_available problem.initial_grid }
+  { problem = problem; current_grid = Model.copy_grid problem.initial_grid; available_grid = create_available problem.initial_grid }
 
 let validate_state (state : state) : response =
   let unsolved =
@@ -34,6 +29,8 @@ let validate_state (state : state) : response =
     if Model.is_valid_solution state.problem solution then Solved solution
     else Fail state
 
+let copy_available available_grid =
+  Array.map (Array.map (Array.map (fun x -> x))) available_grid
 
 let branch_state (state : state) : (state * state) option =
   (* TODO: Pripravite funkcijo, ki v trenutnem stanju poišče hipotezo, glede katere
@@ -41,54 +38,58 @@ let branch_state (state : state) : (state * state) option =
      v prvem predpostavi, da hipoteza velja, v drugem pa ravno obratno.
      Če bo vaš algoritem najprej poizkusil prvo možnost, vam morda pri drugi
      za začetek ni treba zapravljati preveč časa, saj ne bo nujno prišla v poštev. : (state * state) option *)
-  if state.available_list = [] then None
-  else
   
-  (* če je v prvi opciji samo ena možnost, sudoku posodobimo in iz available_lista izbrišemo prvo delitev, to nadaljujemo dokler ni možnosti delitve *)
-  let remove_first list =
-    match list with
-    | x :: xs -> xs
-    | lst -> failwith "Napaka"
-  in
-  let update_sudoku state loc n =
-    let x, y = loc in
-    state.current_grid.(x).(y) <- n;
-    state.available_list <- remove_first (state.available_list);
-    state
-  in
-  let one_option (state: state) =
-    let avail = (List.nth (state.available_list) 0) in
-    if List.length avail.possible = 1 then update_sudoku state avail.loc (Some (List.nth avail.possible 0))
-    else state
+  (* vrne None, ce so vsa polja ze izpolnjena, sicer vrne lokacijo prvega praznega polja*)
+  let find_cell ( state : state ) =
+    let rec aux ( pair : int*int)=
+      match pair with
+      | i, j when i>8 -> None
+      | i, j when j=8 -> if state.current_grid.(i).(j) = None then Some(i,j)
+        else aux ((i+1), 0)
+      | i, j -> if state.current_grid.(i).(j) = None then Some(i,j)
+        else aux (i,(j+1))
+    in 
+    aux (0, 0)
   in
 
-  (* Imamo dve možnosti, lahko razdelimo *)
-  let find_1 (state: state) =
-    let avail = (List.nth (state.available_list) 0) in
-    let x, y = avail.loc in
-    let n = Some (List.nth avail.possible 0) in
-    let new_grid = Model.copy_grid state.current_grid in
-    new_grid.(x).(y) <- n;
-    {problem = state.problem; current_grid = new_grid; available_list = find_available new_grid}
+  (* ce je to stevilo se edina moznost na danem mestu, ga kar zapisemo*)
+  let rec only_option ( state : state ) ( i : int ) ( j : int ) ( n : int ) =
+    match n with
+    | 8 -> true
+    | n  when state.available_grid.(i).(j).(n+1) = true -> false
+    | n -> only_option state i j (n+1)
   in
-  let new_list (avail: available list) =
-    let new_avail = avail in
-    (List.nth new_avail 0).possible <- remove_first (List.nth new_avail 0).possible;
-    new_avail
+  let update ( state : state ) ( i : int ) ( j : int ) ( n : int ) =
+    state.current_grid.(i).(j) <- Some (n+1)
   in
-  let find_2 (state: state) =
-    {problem = state.problem; current_grid = state.current_grid; available_list = new_list state.available_list}
+  let rec branch ( state : state ) ( i : int ) ( j : int ) =
+    let rec aux n =
+      match n with
+      | 9 -> None
+      | n when state.available_grid.(i).(j).(n) = false -> aux (n+1)
+      | n ->
+        if only_option state i j n then
+          (update state i j n;
+          match find_cell state with
+          | None -> None
+          | Some (i, j) -> branch state i j)
+        else
+          let grid_1 = Model.copy_grid state.current_grid in
+          let available_2 = copy_available state.available_grid in
+
+          grid_1.(i).(j) <- Some (n+1);
+          available_2.(i).(j).(n) <- false;
+          
+          Some ({ problem = state.problem; current_grid = grid_1; available_grid = state.available_grid },
+          { problem = state.problem; current_grid = state.current_grid; available_grid = available_2 })
+    in 
+    aux 0
+
   in
-  let branch (state: state) =
-    if state.available_list = [] then None
-    else
-    let state_1 = find_1 state in
-    let state_2 = find_2 state in
-    Some (state_1, state_2)
-  in
-  (* združimo *)
-  state |> one_option |> branch
-      
+  (* zdruzimo *)
+  match find_cell state with
+  | None -> None
+  | Some (x,y) -> branch state x y
 
 (* pogledamo, če trenutno stanje vodi do rešitve *)
 let rec solve_state (state : state) =
