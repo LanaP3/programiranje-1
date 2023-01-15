@@ -82,11 +82,11 @@ let branch_state ( state : state ) : ( state * state ) option =
     aux ( 0, 0 )
   in
 
-  (* ce je to stevilo se edina moznost na danem mestu, ga kar zapisemo*)
+  (* preverjemo za st od danega mesta n naprej (brez n), ce je bilo to stevilo se edina moznost na danem mestu, vrnemo true *)
   let rec only_option ( state : state ) ( i : int ) ( j : int ) ( n : int ) =
     match n with
     | 8 -> true
-    | n  when (state.available_grid.(i).(j).(n+1) = true) -> false
+    | n  when (state.available_grid.(i).(j).(n+1) = true) -> false 
     | n -> only_option state i j ( n + 1 )
   in
 
@@ -94,16 +94,56 @@ let branch_state ( state : state ) : ( state * state ) option =
     state.current_grid.(i).(j) <- Some ( n + 1 )
   in
 
+  (* definiramo rekurzivno funkcijo, ki jo bomo klicali najprej in vedno, ko se posodobi kasna vrednost. V danem stanju izpolni vsa polja z eno samo opcijo *)
+  let fill_single_options ( state : state ) =
+    let rec option i j n =
+      match n with
+      | 8 -> Some 8
+      | n when ( state.available_grid.(i).(j).(n) = true ) -> 
+        ( match ( only_option state i j n ) with
+        | true -> Some n
+        | false -> None )
+      | n -> option i j ( n + 1 )
+    in 
+    (* naredimo cikel, ce smo kasno polje spremenili, se bo ponovno klical, sicer koncamo *)
+    let rec do_cycle ( cycle : bool ) =
+      (* premaknemo se cez vsa polja, ko pridemo do zadnjega poklicemo cikel znova *)
+      let rec aux ( cycle : bool ) ( i : int ) ( j : int ) =
+        match i, j with
+        | i, j when ( i > 8 ) -> do_cycle cycle
+        | i, j when ( j > 8 ) -> aux cycle (i+1) 0
+        | i, j -> (
+          match state.current_grid.(i).(j) with
+          | None -> (
+            match option i j 0 with
+              | None -> aux cycle i ( j + 1 )
+              | Some n -> (
+                update state i j n;
+                update_available state.available_grid i j n ;
+                aux true i ( j + 1 )
+                )
+            )
+          | Some n ->
+            ( aux cycle i ( j + 1 ) )
+        )
+      in
+      if cycle = true then
+        aux false 0 0
+    in
+    do_cycle true
+  in
+
   let rec branch ( state : state ) ( i : int ) ( j : int ) =
     let rec aux n =
       match n with
-      | 9 -> None
-      | n when (state.available_grid.(i).(j).(n) = false) -> aux ( n + 1 )
+      | 9 -> Some ( state, state )
+      | n when ( state.available_grid.(i).(j).(n) = false ) -> aux ( n + 1 )
       | n ->
         (* stevilo je se zadnja moznost na tem mestu *)
         if only_option state i j n then
           ( update state i j n;
           update_available state.available_grid i j n;
+          fill_single_options state;
           match find_cell state with
           | None -> Some (state, state)
           | Some ( i, j ) -> branch state i j )
@@ -115,9 +155,11 @@ let branch_state ( state : state ) : ( state * state ) option =
           update_available available_1 i j n;
           grid_1.(i).(j) <- Some ( n + 1 );
           available_2.(i).(j).(n) <- false;
-          
-          Some ( { problem = state.problem; current_grid = grid_1; available_grid = available_1 },
-          { problem = state.problem; current_grid = state.current_grid; available_grid = available_2 } )
+
+          let state_1 = { problem = state.problem; current_grid = grid_1; available_grid = available_1 } in 
+          let state_2 = { problem = state.problem; current_grid = state.current_grid; available_grid = available_2 } in
+          fill_single_options state_1;
+          Some ( state_1, state_2 )
     in 
     aux 0
 
@@ -125,7 +167,7 @@ let branch_state ( state : state ) : ( state * state ) option =
   (* zdruzimo *)
   match find_cell state with
   | None -> None
-  | Some ( x, y ) -> branch state x y
+  | Some ( x, y ) -> ( fill_single_options state; branch state x y )
 
 (* pogledamo, če trenutno stanje vodi do rešitve *)
 let rec solve_state ( state : state ) =
