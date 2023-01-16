@@ -38,9 +38,9 @@ let rec randlist len max =
 [*----------------------------------------------------------------------------*)
 let rec insert y xs =
   match xs with
-  |[] -> [y]
-  |x::xs when y<=x -> [y;x] @ xs
-  |x::xs -> x :: insert y xs
+  | [] -> [y]
+  | x::xs when y<=x -> [y;x] @ xs
+  | x::xs -> x :: insert y xs
 
 
 (*----------------------------------------------------------------------------*]
@@ -63,19 +63,19 @@ let insert_sort list =
 let min_and_rest list =
   let rec find_min acc list =
     match list with
-    |[] -> acc
-    |x::xs when x<acc -> find_min x xs
-    |x::xs -> find_min acc xs
+    | [] -> acc
+    | x::xs when x<acc -> find_min x xs
+    | x::xs -> find_min acc xs
   in 
   let rec remove_one y list =
     match list with
-    |[] -> []
-    |x::xs when x=y -> remove_one y xs
-    |x::xs -> x::(remove_one y xs)
+    | [] -> []
+    | x::xs when x=y -> remove_one y xs
+    | x::xs -> x::(remove_one y xs)
   in
   match list with
-  |[] -> None
-  |x::xs -> (*uporabi find_min in remove_one*)
+  | [] -> None
+  | x::xs -> (*uporabi find_min in remove_one*)
     let z = find_min x xs
     in
     let rest = remove_one z list

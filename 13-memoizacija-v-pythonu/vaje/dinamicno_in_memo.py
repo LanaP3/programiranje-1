@@ -18,7 +18,7 @@ def najdaljse_narascaroce_podzaporedje (sez):
             brez, n = najdaljse(min, sez[1:])
             z, m = najdaljse(sez[0], sez[1:])
             z = [sez[0]]+z
-            m+=1
+            m += 1
             if n<m:
                 return z, m
             else:
@@ -33,27 +33,22 @@ print(najdaljse_narascaroce_podzaporedje([2, 3, 6, 8, 4, 4, 6, 7, 12, 8, 9]))
 # najdaljših naraščajočih podzaporedij.
 # -----------------------------------------------------------------------------
 def vsa_najdaljša (sez):
-    def najdaljse (min, sez):
-        if len(sez) == 0:
-            return [], 0
-        elif sez[0] >= min:
-            brez, n = najdaljse(min, sez[1:])
-            z, m = najdaljse(sez[0], sez[1:])
-            z = [sez[0]]+z
-            m+=1
-            if n<m:
-                return z, m
-            elif m<n:
-                return brez, n
-            else:
-                return z, m, brez, n
+    def najdaljse (min, i):
+        if i >= len(sez):
+            return (0, [])
+        elif sez[i] < min:
+            return (min, i+1)
         else:
-            brez, n = najdaljse(min, sez[1:])
-            return brez, n
-    return(najdaljse(0, sez))
-#print(vsa_najdaljša([2, 3, 6, 8, 4, 4, 6, 7, 12, 8, 9, 2, 3, 6, 8, 4, 4, 6, 7, 12, 8, 9]))
-
-
+            d_z, zap_z = najdaljse (sez[i], i+1)
+            d_brez, zap_brez = najdaljse (min, i+1)
+            if d_z+1 > d_brez:
+                return (d_z+1, [[sez[i]]+zap for zap in zap_z])
+            elif d_z+1 < d_brez:
+                return (d_brez, zap_brez)
+            else:
+                return (d_brez, [[sez[i]]+zap for zap in zap_z] + zap_brez)
+    return najdaljse(0, 0)[1]
+#print(vsa_najdaljša([2, 3, 6, 8, 4, 4, 6, 7, 12, 8, 9]))
 # =============================================================================
 # Žabica
 # =============================================================================
@@ -83,16 +78,22 @@ def zabica(mocvara):
     def skoki(i, e):
         if i >= len(mocvara):
             return 0
+        # ce ji zmanjka energije, se more spustiti
+        elif e == 0:
+            return 1+skoki(i+1, e + mocvara[i])
         else:
-            e += mocvara[i]
-            st_skokov = 1 + min([skoki(i+x, e-x) for x in range(1,e+1)])
+            # lahko se vseeno takticno spusti
+            n_spust = 1+skoki(i+1, e + mocvara[i])
+            # ali pa leti naprej
+            n_let = skoki(i+1, e-1)
+            return min(n_spust, n_let)
     return(skoki(0, 0))
-print(zabica([2, 4, 1, 2, 1, 3, 1, 1, 5]))
+print(zabica([4, 1, 8, 2, 11, 1, 1, 1, 1, 1]))
 
 # =============================================================================
 # Nageljni
 # =============================================================================
-# Mama Franca želijo na balkon širine `n` postaviti `m` korit z nageljni širine
+# Mama Franca želijo na balkon širine `n` postaviti `m` korit z nageljni, širine
 # `l` (korit, ne nageljnov). Zaradi lažjega zalivanja mora biti med dvema
 # koritoma vsaj za 1 enoto prostora. Mama Franca želijo postaviti vsa korita,
 # jih pa zaradi slabega vida med seboj ne razlikujejo. 
@@ -109,8 +110,25 @@ print(zabica([2, 4, 1, 2, 1, 3, 1, 1, 5]))
 #     [1, 1, 0, 0, 1, 1, 0, 1, 1]
 #     [0, 1, 1, 0, 1, 1, 0, 1, 1]
 # =============================================================================
+@cache
+def nageljni(n, m, l):
+    if m <= 0:
+        return [[0 for _ in range(n)]]
+    elif n < l:
+        return []
+    elif n == l and m == 1:
+        # zapolnimo do potankosti
+        # dodan kot robni primer, da lahko v naslednji opciji vedno dodamo 0
+        # na desno stran korita
+        return [[1 for _ in range(n)]]
+    else:
+        ne_postavimo = [[0] + postavitev for postavitev in nageljni(n-1, m, l)]
+        postavimo = \
+            [[1 for _ in range(l)] + [0] + postavitev
+             for postavitev in nageljni(n-l-1, m-1, l)]
+        return postavimo + ne_postavimo
 
-
+print(nageljni(9, 3, 2))
 
 # =============================================================================
 # Pobeg iz Finske
@@ -154,8 +172,26 @@ print(zabica([2, 4, 1, 2, 1, 3, 1, 1, 5]))
 # zapil). Funkcija `pobeg` sprejme seznam, ki predstavlja finska mesta in vrne
 # seznam indeksov mest, v katerih se Mortimer ustavi.
 # =============================================================================
+def pobeg(pot):
 
+    @cache
+    def pobeg(i, denar):
+        if i >= len(pot) and denar >= 0:
+            return [i]
+        elif i >= len(pot):
+            return None
+        else:
+            moznosti = []
+            for (skok, stroski) in pot[i]:
+                beg = pobeg(skok, denar + stroski)
+                if beg is not None:
+                    moznosti.append(beg)
+            if len(moznosti) == 0:
+                return None
+            else:
+                return [i] + sorted(moznosti, key=len)[0]
 
+    return pobeg(0, 0)
 
 # =============================================================================
 # Pričetek robotske vstaje
@@ -192,3 +228,32 @@ print(zabica([2, 4, 1, 2, 1, 3, 1, 1, 5]))
 # 
 # medtem ko iz vrste 5 in stolpca 0 ne more pobegniti.
 # =============================================================================
+def pot_pobega(soba, vrsta, stolpec, koraki):
+    max_vrsta = len(soba)
+    max_stolpec = len(soba[0])
+
+    @cache
+    def pobegni(vrsta, stolpec, koraki):
+        # Padli smo iz sobe
+        if not (0 <= vrsta < max_vrsta) or not (0 <= stolpec < max_stolpec):
+            return None
+        # Pobeg uspešen! All hail our robot overlords!!!
+        elif soba[vrsta][stolpec] == 1:
+            return []
+        # Lahko bežimo naprej
+        elif soba[vrsta][stolpec] == 0 and koraki > 0:
+            moznosti = \
+                [("dol", pobegni(vrsta + 1, stolpec, koraki-1)),
+                 ("gor", pobegni(vrsta - 1, stolpec, koraki-1)),
+                 ("desno", pobegni(vrsta, stolpec + 1, koraki-1)),
+                 ("levo", pobegni(vrsta, stolpec - 1, koraki-1))]
+            uspesne = \
+                [(smer, pot) for (smer, pot) in moznosti if pot is not None]
+            if uspesne:
+                return [uspesne[0][0]] + uspesne[0][1]  # [smer] + pot
+            else:
+                return None
+        # Pristali smo na oviri ali pa nam je zmanjkalo korakov
+        else:
+            return None
+    return pobegni(vrsta, stolpec, koraki)

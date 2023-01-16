@@ -73,7 +73,7 @@ let optimal_path matrix =
 [*----------------------------------------------------------------------------*)
 let alternating_towers n =
    let rec redbottom height =
-      if height <=0 then 0
+      if height <= 0 then 0
       else if height <= 2 then 1 
       else bluebottom (height - 1) + bluebottom (height -2)
    and
@@ -114,12 +114,25 @@ and blue_tower = TopBlue of blue_block * red_tower | BlueBottom
 
 type tower = Red of red_tower | Blue of blue_tower
 
+let rec add_red red_block = List.map (fun t -> TopRed (red_block, t))
+let rec add_blue blue_block = List.map (fun t -> TopBlue (blue_block, t))
+
 let enumerate_towers height =
-   let rec redbottom height =
-      if height >= 3 then Top
-   and
-   bluebottom height =
-      ...
+  let rec redtop height =
+      if height < 0 then []
+      else if height = 0 then [RedBottom]
+      else
+        add_red Red1 (bluetop (height - 1)) 
+        @ add_red Red2 (bluetop (height - 2))
+  and bluetop height =
+      if height < 0 || height = 1 then [] 
+      else if height = 0 then [BlueBottom]
+      else 
+      add_blue Blue2 (redtop (height - 2)) 
+      @  add_blue Blue3 (redtop (height - 3))
+  in
+  List.map (fun t -> Red t) (redtop height)
+  @ List.map (fun t -> Blue t) (bluetop height)
 
 (*----------------------------------------------------------------------------*]
  Vdrli ste v tovarno čokolade in sedaj stojite pred stalažo kjer so ena ob
@@ -142,3 +155,24 @@ let enumerate_towers height =
 [*----------------------------------------------------------------------------*)
 
 let test_shelf = [1;2;-5;3;7;19;-30;1;0]
+
+let ham_ham shelf_list k =
+   let rec aux sugar i shelf_list finished_list =
+      match shelf_list with
+      | [] -> (sugar, finished_list)
+      | [x] when i<>0 -> (sugar, finished_list @ [false])
+      | [x] when i=0 -> 
+         if x>0 then (sugar+x, finished_list @ [true])
+         else (sugar, finished_list @ [false])
+      | x :: xs when i<>0 -> aux sugar (i-1) xs (finished_list @ [false]) 
+      | x :: xs -> (
+         (* pojemo trenutno mesto *)
+         let s1,l1 = aux (sugar + x) k xs (finished_list @ [true]) in 
+         (* ne pojemo *)
+         let s2,l2 = aux sugar 0 xs (finished_list @ [false]) in
+         if s1>s2 then (s1, l1)
+         else (s2, l2)
+         )
+   in 
+   let s,l = aux 0 0 shelf_list [] in 
+   l

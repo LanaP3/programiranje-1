@@ -153,9 +153,11 @@ type specialisation =
 type status =
   | Newbie
   | Student of magic * int
-  | Emplooyed of magic * specialisation
+  | Employed of magic * specialisation
   
 type wizard = { name: string; status: status }
+
+let professor = {name = "Matija"; status = Employed(Fire, Teacher)}
 
 (*----------------------------------------------------------------------------*]
  Želimo prešteti koliko uporabnikov posamezne od vrst magije imamo na akademiji.
@@ -170,11 +172,11 @@ type wizard = { name: string; status: status }
 
 type magic_counter = { fire: int; frost: int; arcane: int}
                      
-let update counter magic = 
+let update counter ( magic : magic ) = 
   match magic with
-  | Fire -> {counter with (fire = counter.fire + 1)}
-  | Frost -> {counter with (fire = counter.frost + 1)}
-  | Arcane -> {counter with (fire = counter.arcane + 1)}
+  | Fire -> {counter with fire = counter.fire + 1}
+  | Frost -> {counter with frost = counter.frost + 1}
+  | Arcane -> {counter with arcane = counter.arcane + 1}
 
 (*----------------------------------------------------------------------------*]
  Funkcija [count_magic] sprejme seznam čarodejev in vrne števec uporabnikov
@@ -184,8 +186,17 @@ let update counter magic =
  - : magic_counter = {fire = 3; frost = 0; arcane = 0}
 [*----------------------------------------------------------------------------*)
 
-let rec count_magic = ()
-
+let count_magic list =
+  let rec count counter list =
+    match list with
+    | [] -> counter
+    | { name; status } :: tl -> 
+      match status with
+      | Newbie -> count counter tl
+      | Student (magic, _) -> count (update counter magic ) tl
+      | Employed (magic, _) -> count (update counter magic ) tl
+  in 
+  count { fire = 0; frost = 0; arcane = 0 } list
 (*----------------------------------------------------------------------------*]
  Želimo poiskati primernega kandidata za delovni razpis. Študent lahko postane
  zgodovinar po vsaj treh letih študija, raziskovalec po vsaj štirih letih
@@ -200,5 +211,24 @@ let rec count_magic = ()
  - : string option = Some "Jaina"
 [*----------------------------------------------------------------------------*)
 
-let rec find_candidate = ()
+let find_candidate magic specialisation wizard_list =
+  let n = match specialisation with
+    | Historian -> 3
+    | Teacher -> 5
+    | Researcher -> 4 
+  in
+  let rec aux magic n wizard_list =
+    match wizard_list with
+    | [] -> None 
+    | { name; status } :: tl ->
+      match status with
+      | Newbie -> aux magic n tl
+      | Student (mag, m) -> 
+        if (mag = magic) && (m >= n) then Some name
+        else aux magic n tl
+      | Employed (mag, job) -> 
+        if (mag = magic) && (job = specialisation) then Some name
+        else aux magic n tl
+  in 
+  aux magic n wizard_list
                          
