@@ -26,7 +26,7 @@ let leaf x = Node(Empty, x, Empty)
        /   / \
       0   6   11
 [*----------------------------------------------------------------------------*)
-let test = Node(Node(leaf 0, 2, Empty), 5, Node(leaf 6, 7, leaf 11))
+let test_tree = Node(Node(leaf 0, 2, Empty), 5, Node(leaf 6, 7, leaf 11))
 
 (*----------------------------------------------------------------------------*]
  Funkcija [mirror] vrne prezrcaljeno drevo. Na primeru [test_tree] torej vrne
@@ -166,8 +166,18 @@ let rec member2 x tree =
  - : int option = None
 [*----------------------------------------------------------------------------*)
 let succ tree =
+  let rec min tree =
+    match tree with
+    | Empty -> None
+    | Node(Empty,x,_) -> Some x
+    | Node(left,_,_) -> min left
+  in
+  match tree with
+  | Empty -> None
+  | Node(_,_,right) -> min right
 
-
+let pred tree =
+  succ (mirror tree)
 (*----------------------------------------------------------------------------*]
  Na predavanjih ste omenili dva načina brisanja elementov iz drevesa. Prvi 
  uporablja [succ], drugi pa [pred]. Funkcija [delete x bst] iz drevesa [bst] 
@@ -180,6 +190,17 @@ let succ tree =
  Node (Node (Node (Empty, 0, Empty), 2, Empty), 5,
  Node (Node (Empty, 6, Empty), 11, Empty))
 [*----------------------------------------------------------------------------*)
+let rec delete x = function
+  | Empty -> Empty
+  | Node(l, y, r) when x > y -> Node(l, y, delete x r)
+  | Node(l, y, r) when x < y -> Node(delete x l, y, r)
+  | Node(l, y, r) as bst -> (
+      (*Potrebno je izbrisati vozlišče.*)
+      match succ bst with
+      | None -> l (*To se zgodi le kadar je [r] enak [Empty].*)
+      | Some s ->
+        let clean_r = delete s r in
+        Node(l, s, clean_r))
 
 
 (*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*]
@@ -202,7 +223,7 @@ let succ tree =
          /
      "c":-2
 [*----------------------------------------------------------------------------*)
-
+let test_dict = Node(leaf("a", 0), ("b", 1), Node(leaf("c", -2), ("d", 2), Empty))
 
 (*----------------------------------------------------------------------------*]
  Funkcija [dict_get key dict] v slovarju poišče vrednost z ključem [key]. Ker
@@ -213,7 +234,13 @@ let succ tree =
  # dict_get "c" test_dict;;
  - : int option = Some (-2)
 [*----------------------------------------------------------------------------*)
-
+let rec dict_get key dict =
+  match dict with
+  | Empty -> None
+  | Node(l, (k', v), r) -> 
+    if k'=key then Some v
+    else if k'<key then dict_get key r
+    else dict_get key l
       
 (*----------------------------------------------------------------------------*]
  Funkcija [print_dict] sprejme slovar s ključi tipa [string] in vrednostmi tipa
@@ -230,7 +257,14 @@ let succ tree =
  d : 2
  - : unit = ()
 [*----------------------------------------------------------------------------*)
-
+let rec print_dict dict =
+  match dict with
+  | Empty -> ()
+  | Node (l, (k, v), r) -> (
+    print_dict l;
+    print_string (k ^ " : "); print_int v; print_newline ();
+    print_dict r
+  )
 
 (*----------------------------------------------------------------------------*]
  Funkcija [dict_insert key value dict] v slovar [dict] pod ključ [key] vstavi
@@ -251,3 +285,10 @@ let succ tree =
  - : unit = ()
 [*----------------------------------------------------------------------------*)
 
+let rec dict_insert key value dict =
+  match dict with
+  | Empty -> leaf(key,value)
+  | Node(l, (k,v), r) ->
+    if k=key then Node(l, (k,value), r)
+    else if k<key then Node(l, (k,v), dict_insert key value r)
+    else Node(dict_insert key value l, (k,v), r)
